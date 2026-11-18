@@ -1,6 +1,7 @@
 import { ladeDashboard } from "@/dashboard/daten";
 import { BefundListe } from "./BefundListe";
 import { BereichKarte } from "./BereichKarte";
+import { laufHinweis } from "@/dashboard/lauf-hinweis";
 import { zeitpunkt } from "./format";
 import s from "./dashboard.module.css";
 
@@ -26,8 +27,7 @@ export default async function DashboardSeite({ searchParams }: { searchParams: P
   }
   const d = await ladeDashboard(tenant);
   const verbinden = `/api/connect/m365/start?tenant=${encodeURIComponent(tenant)}`;
-  const lauf = d.letzterLauf;
-  const laufFehler = lauf && lauf.ergebnis !== "ok";
+  const hinweis = laufHinweis(d.letzterLauf);
 
   return (
     <main className={s.seite}>
@@ -40,12 +40,10 @@ export default async function DashboardSeite({ searchParams }: { searchParams: P
         <h2 id="verbindung">Verbindung</h2>
         <p>Microsoft 365: <strong>{VERBINDUNG_TEXT[d.verbindung]}</strong></p>
         {d.letzteSammlung && <p>Letzte Datenerhebung: {zeitpunkt(d.letzteSammlung)}</p>}
-        {laufFehler && (
-          <p role="status" className={s.warnung}>
-            {lauf.ergebnis === "getrennt"
-              ? "Der letzte Lauf wurde abgebrochen: Die Verbindung ist getrennt."
-              : "Der letzte Lauf ist fehlgeschlagen."}
-            {d.befundeStand && ` Angezeigt werden die Befunde des letzten erfolgreichen Laufs (${zeitpunkt(d.befundeStand)}).`}
+        {hinweis && (
+          <p role="status" className={hinweis.art === "warnung" ? s.warnung : undefined}>
+            {hinweis.text}
+            {hinweis.art === "warnung" && d.befundeStand && ` Angezeigt werden die Befunde des letzten erfolgreichen Laufs (${zeitpunkt(d.befundeStand)}).`}
           </p>
         )}
         {d.verbindung !== "verbunden" && (
