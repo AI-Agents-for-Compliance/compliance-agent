@@ -23,5 +23,10 @@
 - Use a task branch and keep each change reviewable. Do not edit `main` directly.
 - Codex and Claude Code share this file as the common project guidance. For
   simultaneous edits, use separate Git worktrees and branches.
+- When the user-requested task is complete, review the changes and commit and
+  push the finished work to its current feature branch without requiring a
+  reminder. Leave unrelated or clearly in-progress edits uncommitted and tell
+  the user they remain local. Do not merge into `main` or force-push unless the
+  user explicitly asks.
 - Before finishing, summarize changed files and any checks performed. Do not
   claim checks passed unless they were run and succeeded.

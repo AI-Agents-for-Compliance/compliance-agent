@@ -22,8 +22,9 @@ feedback-session guide.
 ## Save work to GitHub
 
 The local checkout is connected to `AI-Agents-for-Compliance/compliance-agent`
-as `origin`. GitHub does not receive local edits automatically: commit and push
-the work when you want it backed up remotely.
+as `origin`. GitHub does not receive local edits automatically. After a task is
+finished, review, commit, and push its completed changes to the current feature
+branch. Incomplete or unrelated edits should remain uncommitted until ready.
 
 ```bash
 git switch -c feat/short-task-name
