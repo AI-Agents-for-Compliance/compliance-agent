@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/jobs/boss", () => ({ enqueueCollection: vi.fn(async () => "job-1") }));
 
@@ -22,6 +22,7 @@ beforeEach(async () => {
   await resetTenants(A, B);
 });
 afterAll(closeDb);
+afterEach(() => vi.unstubAllEnvs());
 
 const req = (q: string) => new Request(`http://localhost/api/connect/m365/callback${q}`);
 const rows = <T>(q: ReturnType<typeof sql>) =>
@@ -68,6 +69,36 @@ describe("GET /api/connect/m365/callback", () => {
     expect(await verbindungen()).toEqual([{ ms_tenant_id: MS2, status: "aktiv" }]);
     const a = await audits();
     expect(a[1].details).toEqual({ msTenantId: MS2, vorherigerMsTenantId: MS });
+  });
+  it("admin_consent fehlt ganz → 400", async () => {
+    expect((await GET(req(`?tenant=${MS}&state=${signState(A)}`))).status).toBe(400);
+    expect(await verbindungen()).toHaveLength(0);
+  });
+  it("APP_URL fehlt → 500, nichts gespeichert", async () => {
+    vi.stubEnv("APP_URL", "");
+    expect((await GET(req(`?admin_consent=True&tenant=${MS}&state=${signState(A)}`))).status).toBe(500);
+    expect(await verbindungen()).toHaveLength(0);
+  });
+  it("parallele Callbacks → genau eine Verbindungszeile", async () => {
+    // Hinweis: DB_POOL_MAX=1 serialisiert die Verbindungen; geprüft wird der Upsert-/Unique-Pfad.
+    const rs = await Promise.all([
+      GET(req(`?admin_consent=True&tenant=${MS}&state=${signState(A)}`)),
+      GET(req(`?admin_consent=True&tenant=${MS2}&state=${signState(A)}`)),
+    ]);
+    expect(rs.map((r) => r.status)).toEqual([302, 302]);
+    expect(await verbindungen()).toHaveLength(1);
+  });
+  it("Rebind setzt last_collected_at zurück", async () => {
+    await GET(req(`?admin_consent=True&tenant=${MS}&state=${signState(A)}`));
+    await withTenant(A, (tx) => tx.execute(sql`UPDATE m365_connections SET last_collected_at = now()`));
+    await GET(req(`?admin_consent=True&tenant=${MS}&state=${signState(A)}`));
+    expect((await rows<{ l: unknown }>(sql`SELECT last_collected_at AS l FROM m365_connections`))[0].l).not.toBeNull();
+    await GET(req(`?admin_consent=True&tenant=${MS2}&state=${signState(A)}`));
+    expect((await rows<{ l: unknown }>(sql`SELECT last_collected_at AS l FROM m365_connections`))[0].l).toBeNull();
+  });
+  it("error-Wert wird gefiltert", async () => {
+    await GET(req(`?error=${encodeURIComponent("<script>x")}&state=${signState(A)}`));
+    expect((await audits())[0].details).toEqual({ fehler: "unbekannt" });
   });
   it("Enqueue-Fehler: Verbindung bleibt, Redirect trotzdem", async () => {
     vi.mocked(enqueueCollection).mockRejectedValue(new Error("boss down"));

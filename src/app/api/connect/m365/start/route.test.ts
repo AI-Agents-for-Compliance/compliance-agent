@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeDb } from "@/db/client";
 import { resetTenants } from "@/db/helpers.test-util";
 import { verifyState } from "@/connect/state";
@@ -15,6 +15,7 @@ beforeEach(async () => {
   await resetTenants(A, B);
 });
 afterAll(closeDb);
+afterEach(() => vi.unstubAllEnvs());
 
 const req = (q: string) => new Request(`http://evil.example/api/connect/m365/start${q}`);
 

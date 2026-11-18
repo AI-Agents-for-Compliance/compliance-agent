@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { InvalidStateError, verifyState } from "@/connect/state";
 import { recordAudit } from "@/db/audit";
 import { m365Connections } from "@/db/schema";
@@ -12,9 +12,11 @@ const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ACTOR = "system:verbinden";
 
 const bad = (msg: string) => new Response(msg, { status: 400 });
-const redirect = (path: string) => Response.redirect(`${(process.env.APP_URL ?? "").replace(/\/+$/, "")}${path}`, 302);
+const appUrl = () => (process.env.APP_URL ?? "").replace(/\/+$/, "");
+const redirect = (path: string) => Response.redirect(`${appUrl()}${path}`, 302);
 
 export async function GET(req: Request): Promise<Response> {
+  if (!appUrl()) return new Response("APP_URL ist nicht konfiguriert", { status: 500 });
   const q = new URL(req.url).searchParams;
 
   let tenantId: string;
@@ -26,8 +28,10 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   if (q.has("error")) {
+    const roh = q.get("error") ?? "";
+    const fehler = /^[a-z_]{1,64}$/.test(roh) ? roh : "unbekannt";
     await withTenant(tenantId, (tx) =>
-      recordAudit(tx, { actor: ACTOR, aktion: "zustimmung_abgelehnt", details: { fehler: q.get("error") } }),
+      recordAudit(tx, { actor: ACTOR, aktion: "zustimmung_abgelehnt", details: { fehler } }),
     );
     return redirect(`/dashboard?tenant=${tenantId}&hinweis=zustimmung_abgelehnt`);
   }
@@ -37,17 +41,24 @@ export async function GET(req: Request): Promise<Response> {
   if (!GUID.test(msTenantId)) return bad("Ungültige Microsoft-Mandanten-ID");
 
   await withTenant(tenantId, async (tx) => {
+    // Serialisiert gleichzeitige Callbacks je Mandant; der Unique-Index sichert zusätzlich ab.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${tenantId}))`);
     const [existing] = await tx.select().from(m365Connections).where(eq(m365Connections.tenantId, tenantId)).limit(1);
-    if (existing) {
-      await tx
-        .update(m365Connections)
-        .set({ msTenantId, status: "aktiv", connectedAt: new Date() })
-        .where(eq(m365Connections.id, existing.id));
-    } else {
-      await tx.insert(m365Connections).values({ tenantId, msTenantId, status: "aktiv" });
-    }
+    const rebind = !!existing && existing.msTenantId !== msTenantId;
+    await tx
+      .insert(m365Connections)
+      .values({ tenantId, msTenantId, status: "aktiv" })
+      .onConflictDoUpdate({
+        target: m365Connections.tenantId,
+        set: {
+          msTenantId,
+          status: "aktiv",
+          connectedAt: new Date(),
+          ...(rebind ? { lastCollectedAt: null } : {}),
+        },
+      });
     const details: Record<string, string> = { msTenantId };
-    if (existing && existing.msTenantId !== msTenantId) details.vorherigerMsTenantId = existing.msTenantId;
+    if (rebind) details.vorherigerMsTenantId = existing.msTenantId;
     await recordAudit(tx, { actor: ACTOR, aktion: "verbindung_hergestellt", details });
   });
 
