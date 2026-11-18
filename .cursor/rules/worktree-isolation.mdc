@@ -1,0 +1,12 @@
+---
+description: Keep Cursor edits isolated to its assigned Git worktree
+alwaysApply: true
+---
+
+- This Cursor checkout is the dedicated `cursor/agentic-compliance` worktree.
+- Keep edits, commits, and pushes on this worktree's branch. Do not edit Codex's
+  or Claude Code's worktrees, and do not edit `main` directly.
+- The Cursor app and Cursor CLI share files when opened in this same folder. Do
+  not run two Cursor agent sessions that write to this worktree simultaneously.
+- After completing a requested task, review and commit/push only that task's
+  finished changes. Leave unrelated or in-progress changes alone.

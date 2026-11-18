@@ -21,8 +21,13 @@
 - Do not add real secrets. `.env.example` files may contain placeholder values;
   local `.env*` files must remain untracked.
 - Use a task branch and keep each change reviewable. Do not edit `main` directly.
-- Codex and Claude Code share this file as the common project guidance. For
-  simultaneous edits, use separate Git worktrees and branches.
+- Use the dedicated Git worktree for your coding tool. Do not edit in another
+  tool's worktree or have two agents write to the same worktree at once.
+- Codex, Claude Code, and Cursor share these repository-level workflow rules;
+  Cursor also has a tool-specific rule in `.cursor/rules/`.
+- The app and terminal are interfaces, not separate copies of the files. If the
+  same tool is open in both, only one session should edit that worktree at a
+  time; use the other surface for read-only review or shell commands.
 - When the user-requested task is complete, review the changes and commit and
   push the finished work to its current feature branch without requiring a
   reminder. Leave unrelated or clearly in-progress edits uncommitted and tell

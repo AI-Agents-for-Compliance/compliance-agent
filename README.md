@@ -42,11 +42,26 @@ contain placeholders only.
 
 ## Using Codex and Claude Code
 
-Open this repository folder as the local Codex project. Start Claude Code from
-this same folder when working sequentially. For simultaneous code changes, give
-each tool its own Git worktree and branch; do not have both edit the same
-checkout at once. Shared repository instructions are in [`AGENTS.md`](AGENTS.md)
-and [`CLAUDE.md`](CLAUDE.md).
+Open this repository folder as the local Codex project. This checkout is the
+Codex worktree. Claude Code and Cursor use their own sibling worktrees:
+
+```bash
+git worktree add ../compliance-agent-claude -b claude/agentic-compliance HEAD
+git worktree add ../compliance-agent-cursor -b cursor/agentic-compliance HEAD
+```
+
+Start the tools in their assigned folders:
+
+```bash
+cd ../compliance-agent-claude && claude
+cd ../compliance-agent-cursor && agent
+```
+
+The desktop app for each tool should open that tool's assigned folder too. App
+and terminal sessions share files when they point to the same folder, so only
+one agent session should edit a worktree at a time. Shared rules are in
+[`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
+`.cursor/rules/worktree-isolation.mdc`.
 
 ## Other application scaffolds
 
