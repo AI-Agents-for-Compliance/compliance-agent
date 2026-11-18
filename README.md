@@ -42,25 +42,30 @@ contain placeholders only.
 
 ## Using Codex and Claude Code
 
-Open this repository folder as the local Codex project. This checkout is the
-Codex worktree. Claude Code and Cursor use their own sibling worktrees:
+Each independently running coding session gets its own worktree and branch.
+The desktop-app sessions use these worktrees:
+
+| Session | Folder | Branch |
+| --- | --- | --- |
+| Codex desktop app | `/Users/Alex/compliance-agent` | `codex/startup-local-workflow` |
+| Codex terminal | `/Users/Alex/compliance-agent-codex-cli` | `codex/terminal-agent` |
+| Claude desktop app | `/Users/Alex/compliance-agent-claude` | `claude/agentic-compliance` |
+| Claude terminal | `/Users/Alex/compliance-agent-claude-cli` | `claude/terminal-agent` |
+| Cursor desktop app | `/Users/Alex/compliance-agent-cursor` | `cursor/agentic-compliance` |
+| Cursor terminal | `/Users/Alex/compliance-agent-cursor-cli` | `cursor/terminal-agent` |
+
+Open each app on its assigned folder. Start terminal agents in the matching
+folder, for example:
 
 ```bash
-git worktree add ../compliance-agent-claude -b claude/agentic-compliance HEAD
-git worktree add ../compliance-agent-cursor -b cursor/agentic-compliance HEAD
+cd /Users/Alex/compliance-agent-codex-cli && codex --model gpt-5.6-terra
+cd /Users/Alex/compliance-agent-claude-cli && claude
+cd /Users/Alex/compliance-agent-cursor-cli && agent
 ```
 
-Start the tools in their assigned folders:
-
-```bash
-cd ../compliance-agent-claude && claude
-cd ../compliance-agent-cursor && agent
-```
-
-The desktop app for each tool should open that tool's assigned folder too. App
-and terminal sessions share files when they point to the same folder, so only
-one agent session should edit a worktree at a time. Shared rules are in
-[`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
+App and terminal sessions are independent and do not share conversation context.
+Never point two active writing sessions at the same worktree. Shared rules are
+in [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and
 `.cursor/rules/worktree-isolation.mdc`.
 
 ## Other application scaffolds
