@@ -1,9 +1,11 @@
+import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { closeDb } from "../../db/client";
 import { withTenant } from "../../db/tenant";
+import { TEST_DATABASE_URL } from "../../db/test-setup";
 import { resetTenants, sql } from "../../db/helpers.test-util";
 import { ENDPOINTS } from "./endpoints";
-import { TokenError, type GraphFetcher } from "./graph";
+import { TokenError, TokenTransientError, type GraphFetcher } from "./graph";
 import { collectM365, ConsentRevokedError } from "./collect";
 
 const A = "11111111-1111-4111-8111-111111111111";
@@ -50,7 +52,15 @@ describe("collectM365", () => {
     expect(bundle["m365.conditionalAccessPolicies"]?.data).toMatchObject({ fehler: { http: 403 } });
     expect(bundle["m365.users"]?.status).toBe("ok");
   });
-  it("Token-Fehler → ConsentRevokedError, nichts gespeichert", async () => {
+  async function snapshotAnzahl() {
+    const owner = postgres(TEST_DATABASE_URL, { max: 1, onnotice: () => {} });
+    try {
+      return (await owner`SELECT count(*)::int AS n FROM evidence_snapshots`)[0].n as number;
+    } finally {
+      await owner.end();
+    }
+  }
+  it("Token-Fehler (Zustimmung) → ConsentRevokedError, Abbruch, nach Rollback keine Snapshots", async () => {
     let n = 0;
     const f: GraphFetcher = {
       async get() {
@@ -58,14 +68,22 @@ describe("collectM365", () => {
         return ok({ value: [] });
       },
     };
-    await expect(
-      withTenant(A, async (tx) => {
-        try {
-          await collectM365(tx, f);
-        } finally {
-          expect(n).toBe(3); // abgebrochen beim ersten Token-Fehler
-        }
-      }),
-    ).rejects.toBeInstanceOf(ConsentRevokedError);
+    await expect(withTenant(A, (tx) => collectM365(tx, f))).rejects.toBeInstanceOf(ConsentRevokedError);
+    expect(n).toBe(3);
+    expect(await snapshotAnzahl()).toBe(0);
+  });
+  it("vorübergehender Token-Fehler → TokenTransientError unverändert (kein ConsentRevoked), Abbruch, keine Snapshots", async () => {
+    let n = 0;
+    const f: GraphFetcher = {
+      async get() {
+        if (++n === 2) throw new TokenTransientError("dns");
+        return ok({ value: [] });
+      },
+    };
+    const e = await withTenant(A, (tx) => collectM365(tx, f)).catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(TokenTransientError);
+    expect(e).not.toBeInstanceOf(ConsentRevokedError);
+    expect(n).toBe(2);
+    expect(await snapshotAnzahl()).toBe(0);
   });
 });
