@@ -31,3 +31,21 @@ Dashboard: `http://localhost:3000/dashboard?tenant=<uuid>`
 - [Entwicklungsanleitung](docs/entwicklung.md): Tenant, App-Registrierung, Zertifikat, Umgebungsvariablen, erster echter Test
 - [Spezifikation](docs/superpowers/specs/2026-11-18-nis2-agent-design.md)
 - [Plan 1](docs/superpowers/plans/2026-11-18-plan-1-fundament-m365.md)
+- [Agenten-Arbeitsplan](docs/agent-workplan.md): Aufgaben einzeln zuweisen und voneinander abgrenzen
+
+## Zusammenarbeit mit Coding-Agents
+
+`prd.md` ist der gemeinsame Produktauftrag. Die aktuelle Umsetzung und konkreten technischen Entscheidungen stehen in der Spezifikation und den Plänen unter `docs/superpowers/`. Bei einem Widerspruch muss die Aufgabe zuerst die gewünschte Produktentscheidung benennen, statt stillschweigend eine Richtung zu wählen.
+
+Jede laufende Coding-Sitzung arbeitet in genau einem eigenen Git-Worktree und Branch. Die Sitzungen teilen Produktauftrag und Aufgabenplan, aber nicht denselben Arbeitsordner. Vor Änderungen liest der Agent `AGENTS.md` und prüft den aktuellen Branch. Aufgaben werden über `docs/agent-workplan.md` verteilt und erst nach Erfüllung ihrer Akzeptanzkriterien committed.
+
+| Sitzung | Lokaler Ordner | Branch |
+| --- | --- | --- |
+| Codex Desktop (Koordination/Integration) | `/Users/Alex/compliance-agent` | `codex/desktop-main` |
+| Codex Terminal | `/Users/Alex/compliance-agent-codex-cli` | `codex/terminal-main` |
+| Claude Desktop | `/Users/Alex/compliance-agent-claude` | `claude/desktop-main` |
+| Claude Terminal | `/Users/Alex/compliance-agent-claude-cli` | `claude/terminal-main` |
+| Cursor Desktop | `/Users/Alex/compliance-agent-cursor` | `cursor/desktop-main` |
+| Cursor Terminal | `/Users/Alex/compliance-agent-cursor-cli` | `cursor/terminal-main` |
+
+Die Branches starten auf einem gemeinsamen Stand. Änderungen werden über task-spezifische Commits und Pull Requests integriert; niemand arbeitet direkt auf `main`. Vor jedem Task werden zuständige Sitzung, betroffene Dateien, Schnittstellen und Abnahmekriterien im Arbeitsplan festgehalten.
