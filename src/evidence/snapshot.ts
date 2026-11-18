@@ -6,6 +6,10 @@ import type { EvidenceItem, EvidenceKey, EvidenceStatus } from "./types";
 
 /** Kanonische Form: Objektschlüssel rekursiv sortiert, Arrays behalten ihre Reihenfolge. */
 function canonicalize(v: unknown): unknown {
+  // toJSON zuerst anwenden (z. B. Date), wie JSON.stringify - sonst weicht der Hash vom gespeicherten jsonb ab.
+  if (v !== null && typeof v === "object" && typeof (v as { toJSON?: unknown }).toJSON === "function") {
+    v = (v as { toJSON: () => unknown }).toJSON();
+  }
   if (Array.isArray(v)) return v.map(canonicalize);
   if (v !== null && typeof v === "object") {
     const o = v as Record<string, unknown>;
@@ -30,6 +34,7 @@ export async function storeSnapshot(
   tx: Tx,
   s: { key: EvidenceKey; status: EvidenceStatus; payload: unknown; source: "m365" },
 ): Promise<EvidenceItem> {
+  if (s.payload === undefined || s.payload === null) throw new Error("Nachweis-Payload darf nicht leer sein");
   const [row] = await tx
     .insert(evidenceSnapshots)
     .values({

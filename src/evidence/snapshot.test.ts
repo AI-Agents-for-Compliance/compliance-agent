@@ -18,7 +18,7 @@ async function rawSelectSnapshot(id: string) {
   const owner = postgres(TEST_DATABASE_URL, { max: 1, onnotice: () => {} });
   try {
     const rows = await owner`SELECT * FROM evidence_snapshots WHERE id = ${id}`;
-    return rows[0] as { sha256: string; tenant_id: string; source: string; key: string; status: string };
+    return rows[0] as { sha256: string; payload: unknown; tenant_id: string; source: string; key: string; status: string };
   } finally {
     await owner.end();
   }
@@ -34,7 +34,33 @@ describe("canonicalHash", () => {
     expect(canonicalHash({ a: 1, b: undefined })).toBe(canonicalHash({ a: 1 })));
 });
 
+describe("canonicalHash (weitere Fälle)", () => {
+  it("Date wird wie in JSON.stringify als ISO-String behandelt", () => {
+    expect(canonicalHash({ d: new Date(0) })).toBe(canonicalHash({ d: "1970-01-01T00:00:00.000Z" }));
+    expect(canonicalHash({ d: new Date(0) })).not.toBe(canonicalHash({ d: new Date(1000) }));
+  });
+  it("Arrays von Objekten werden rekursiv kanonisiert", () =>
+    expect(canonicalHash({ l: [{ b: 1, a: 2 }, { d: 3, c: 4 }] })).toBe(
+      canonicalHash({ l: [{ a: 2, b: 1 }, { c: 4, d: 3 }] }),
+    ));
+});
+
 describe("storeSnapshot", () => {
+  it("Hash passt zum gespeicherten jsonb (Round-Trip)", async () => {
+    const payload = { z: [{ b: 1, a: { y: 2, x: [3, { q: 1, p: 2 }] } }], a: "x", d: new Date(0) };
+    const s = await withTenant(A, (tx) => storeSnapshot(tx, { key: "m365.users", status: "ok", payload, source: "m365" }));
+    const row = await rawSelectSnapshot(s.snapshotId);
+    expect(canonicalHash(row.payload)).toBe(row.sha256);
+  });
+
+  it("lehnt leere Payloads (undefined/null) ab", async () => {
+    for (const payload of [undefined, null]) {
+      await expect(
+        withTenant(A, (tx) => storeSnapshot(tx, { key: "m365.users", status: "error", payload, source: "m365" })),
+      ).rejects.toThrow("Nachweis-Payload darf nicht leer sein");
+    }
+  });
+
   it("speichert Snapshot mit Hash und Zeitstempel", async () => {
     const s = await withTenant(A, (tx) =>
       storeSnapshot(tx, { key: "m365.users", status: "ok", payload: { value: [] }, source: "m365" }),
