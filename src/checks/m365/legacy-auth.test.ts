@@ -41,3 +41,32 @@ describe("M365-LEGACY-AUTH", () => {
   it("nur eine Anwendung → teilweise", () =>
     expect(run(false, [caPolicy({ applications: ["app-1"], clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["block"] })]).status).toBe("teilweise"));
 });
+
+const bedingungen: Array<[string, Parameters<typeof caPolicy>[0], string]> = [
+  ["Benutzerrisiko", { condExtra: { userRiskLevels: ["high"] } }, "Benutzerrisiko"],
+  ["Anmelderisiko", { condExtra: { signInRiskLevels: ["medium", "high"] } }, "Anmelderisiko"],
+  ["Standorte ausgeschlossen", { condExtra: { locations: { includeLocations: ["All"], excludeLocations: ["AllTrusted"] } } }, "Standort"],
+  ["Standorte eingeschränkt", { condExtra: { locations: { includeLocations: ["loc-1"] } } }, "Standort"],
+  ["Plattformen eingeschränkt", { condExtra: { platforms: { includePlatforms: ["android"] } } }, "Plattform"],
+  ["Plattformen ausgeschlossen", { condExtra: { platforms: { includePlatforms: ["all"], excludePlatforms: ["iOS"] } } }, "Plattform"],
+  ["ausgeschlossene Anwendungen", { appsExtra: { excludeApplications: ["app-x"] } }, "ausgeschlossene Anwendungen"],
+  ["Gerätefilter", { condExtra: { devices: { deviceFilter: { mode: "exclude", rule: "x" } } } }, "Gerätefilter"],
+  ["Gäste ausgeschlossen", { usersExtra: { excludeGuestsOrExternalUsers: { guestOrExternalUserTypes: "b2bCollaborationGuest" } } }, "Gäste"],
+  ["Benutzeraktionen", { appsExtra: { includeUserActions: ["urn:user:registersecurityinfo"] } }, "Benutzeraktionen"],
+];
+
+describe("Geltungsbereich: weitere Bedingungen (fail-safe)", () => {
+  it.each(bedingungen)("%s → teilweise mit Begründung", (_n, o, text) => {
+    const r = run(false, [caPolicy({ clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["block"], ...o })]);
+    expect(r.status).toBe("teilweise");
+    expect(r.begruendung).toContain(text);
+  });
+  it("Mischfall: breite Richtlinie mit weiterer Bedingung und schmale ohne Bedingung → teilweise", () => {
+    const base = { clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["block"] };
+    const r = run(false, [
+      caPolicy({ ...base, condExtra: { locations: { includeLocations: ["All"], excludeLocations: ["AllTrusted"] } } }),
+      caPolicy({ ...base, includeUsers: ["pilot"] }),
+    ]);
+    expect(r.status).toBe("teilweise");
+  });
+});

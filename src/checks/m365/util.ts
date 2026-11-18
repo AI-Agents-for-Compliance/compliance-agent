@@ -18,9 +18,17 @@ export function ergebnis(e: EvidenceBundle, keys: EvidenceKey[], status: Status,
 export interface CaPolicy {
   state?: string;
   conditions?: {
-    users?: { includeUsers?: string[]; excludeUsers?: string[]; excludeGroups?: string[]; excludeRoles?: string[] };
-    applications?: { includeApplications?: string[] };
+    users?: {
+      includeUsers?: string[]; excludeUsers?: string[]; excludeGroups?: string[]; excludeRoles?: string[];
+      excludeGuestsOrExternalUsers?: unknown;
+    };
+    applications?: { includeApplications?: string[]; excludeApplications?: string[]; includeUserActions?: string[] };
     clientAppTypes?: string[];
+    userRiskLevels?: string[];
+    signInRiskLevels?: string[];
+    locations?: { includeLocations?: string[]; excludeLocations?: string[] } | null;
+    platforms?: { includePlatforms?: string[]; excludePlatforms?: string[] } | null;
+    devices?: { deviceFilter?: unknown } | null;
   };
   grantControls?: { operator?: string; builtInControls?: string[]; authenticationStrength?: unknown } | null;
 }
@@ -37,6 +45,24 @@ function geltungsbereichProbleme(p: CaPolicy): string[] {
   if (gr > 0) probleme.push(`${gr} ausgeschlossene Gruppen/Rollen`);
   const ex = u?.excludeUsers?.length ?? 0;
   if (ex > MAX_AUSNAHMEKONTEN) probleme.push(`${ex} ausgeschlossene Benutzer`);
+
+  // Weitere Bedingungen schränken den Geltungsbereich ein; fail-safe: jede zählt als Einschränkung.
+  const c = p.conditions;
+  const a = c?.applications;
+  if (u?.excludeGuestsOrExternalUsers != null) probleme.push("Gäste/externe Benutzer sind ausgeschlossen");
+  if ((a?.excludeApplications?.length ?? 0) > 0) probleme.push(`${a!.excludeApplications!.length} ausgeschlossene Anwendungen`);
+  if ((a?.includeUserActions?.length ?? 0) > 0) probleme.push("gilt für Benutzeraktionen statt für Anwendungen");
+  if ((c?.userRiskLevels?.length ?? 0) > 0) probleme.push("gilt nur bei bestimmtem Benutzerrisiko");
+  if ((c?.signInRiskLevels?.length ?? 0) > 0) probleme.push("gilt nur bei bestimmtem Anmelderisiko");
+  const loc = c?.locations;
+  if (loc && (!loc.includeLocations?.includes("All") || (loc.excludeLocations?.length ?? 0) > 0)) {
+    probleme.push("gilt nur für bestimmte Standorte oder schließt Standorte aus");
+  }
+  const pf = c?.platforms;
+  if (pf && (!pf.includePlatforms?.some((x) => x.toLowerCase() === "all") || (pf.excludePlatforms?.length ?? 0) > 0)) {
+    probleme.push("gilt nur für bestimmte Geräteplattformen oder schließt Plattformen aus");
+  }
+  if (c?.devices?.deviceFilter != null) probleme.push("enthält einen Gerätefilter");
   return probleme;
 }
 
@@ -44,10 +70,16 @@ function geltungsbereichProbleme(p: CaPolicy): string[] {
 export function mfaWirkung(p: CaPolicy): string[] | undefined {
   const g = p.grantControls;
   if (!g) return undefined;
-  if (g.authenticationStrength != null) return [];
   const c = g.builtInControls ?? [];
-  if (!c.includes("mfa")) return undefined;
-  return g.operator === "AND" || c.length === 1 ? [] : ["MFA ist nicht zwingend (Verknüpfung mit OR)"];
+  const stark = g.authenticationStrength != null;
+  if (!stark && !c.includes("mfa")) return undefined;
+  const probleme: string[] = [];
+  if (!stark && g.operator !== "AND" && c.length !== 1) probleme.push("MFA ist nicht zwingend (Verknüpfung mit OR)");
+  const apps = p.conditions?.clientAppTypes ?? [];
+  const alleClients = apps.length === 0 || apps.includes("all")
+    || (apps.includes("browser") && apps.includes("mobileAppsAndDesktopClients"));
+  if (!alleClients) probleme.push("gilt nicht für alle Client-Apps");
+  return probleme;
 }
 
 export interface Bewertung { status: Status; detail: string }

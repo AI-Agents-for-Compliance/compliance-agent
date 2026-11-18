@@ -68,3 +68,40 @@ describe("M365-MFA-ERZWUNGEN", () => {
   it("beste Richtlinie zählt (teilweise + alle → erfuellt)", () =>
     expect(run(false, [caPolicy({ includeUsers: ["u-1"] }), caPolicy()]).status).toBe("erfuellt"));
 });
+
+const bedingungen: Array<[string, Parameters<typeof caPolicy>[0], string]> = [
+  ["Benutzerrisiko", { condExtra: { userRiskLevels: ["high"] } }, "Benutzerrisiko"],
+  ["Anmelderisiko", { condExtra: { signInRiskLevels: ["medium", "high"] } }, "Anmelderisiko"],
+  ["Standorte ausgeschlossen", { condExtra: { locations: { includeLocations: ["All"], excludeLocations: ["AllTrusted"] } } }, "Standort"],
+  ["Standorte eingeschränkt", { condExtra: { locations: { includeLocations: ["loc-1"] } } }, "Standort"],
+  ["Plattformen eingeschränkt", { condExtra: { platforms: { includePlatforms: ["android"] } } }, "Plattform"],
+  ["Plattformen ausgeschlossen", { condExtra: { platforms: { includePlatforms: ["all"], excludePlatforms: ["iOS"] } } }, "Plattform"],
+  ["ausgeschlossene Anwendungen", { appsExtra: { excludeApplications: ["app-x"] } }, "ausgeschlossene Anwendungen"],
+  ["Gerätefilter", { condExtra: { devices: { deviceFilter: { mode: "exclude", rule: "x" } } } }, "Gerätefilter"],
+  ["Gäste ausgeschlossen", { usersExtra: { excludeGuestsOrExternalUsers: { guestOrExternalUserTypes: "b2bCollaborationGuest" } } }, "Gäste"],
+  ["Benutzeraktionen", { appsExtra: { includeUserActions: ["urn:user:registersecurityinfo"] } }, "Benutzeraktionen"],
+];
+
+describe("Geltungsbereich: weitere Bedingungen (fail-safe)", () => {
+  it.each(bedingungen)("%s → teilweise mit Begründung", (_n, o, text) => {
+    const r = run(false, [caPolicy({ ...o })]);
+    expect(r.status).toBe("teilweise");
+    expect(r.begruendung).toContain(text);
+  });
+  it("clientAppTypes nur browser → teilweise; browser+mobileAppsAndDesktopClients oder leer → erfuellt", () => {
+    expect(run(false, [caPolicy({ clientAppTypes: ["browser"] })]).status).toBe("teilweise");
+    expect(run(false, [caPolicy({ clientAppTypes: ["browser", "mobileAppsAndDesktopClients"] })]).status).toBe("erfuellt");
+    expect(run(false, [caPolicy({ clientAppTypes: [] })]).status).toBe("erfuellt");
+  });
+  it("Mischfall: breite Richtlinie mit OR und schmale mit AND → teilweise", () => {
+    const r = run(false, [
+      caPolicy({ builtInControls: ["mfa", "compliantDevice"], operator: "OR" }),
+      caPolicy({ builtInControls: ["mfa", "compliantDevice"], operator: "AND", includeUsers: ["pilot"] }),
+    ]);
+    expect(r.status).toBe("teilweise");
+  });
+  it("Standort-Ausschluss: Begründung nennt den Grund nicht als erfüllt", () => {
+    const r = run(false, [caPolicy({ condExtra: { locations: { includeLocations: ["All"], excludeLocations: ["AllTrusted"] } } })]);
+    expect(r.status).not.toBe("erfuellt");
+  });
+});

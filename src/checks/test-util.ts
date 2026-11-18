@@ -58,6 +58,10 @@ export function caPolicy(o: {
   builtInControls?: string[];
   operator?: "AND" | "OR";
   authenticationStrength?: unknown;
+  /** Zusätzliche Bedingungen (überschreiben/ergänzen die jeweiligen Abschnitte). */
+  usersExtra?: Record<string, unknown>;
+  appsExtra?: Record<string, unknown>;
+  condExtra?: Record<string, unknown>;
 } = {}) {
   return {
     displayName: "Policy",
@@ -68,9 +72,11 @@ export function caPolicy(o: {
         excludeUsers: o.excludeUsers ?? [],
         excludeGroups: o.excludeGroups ?? [],
         excludeRoles: o.excludeRoles ?? [],
+        ...o.usersExtra,
       },
-      applications: { includeApplications: o.applications ?? ["All"] },
+      applications: { includeApplications: o.applications ?? ["All"], ...o.appsExtra },
       clientAppTypes: o.clientAppTypes ?? ["all"],
+      ...o.condExtra,
     },
     grantControls: {
       operator: o.operator ?? "OR",
