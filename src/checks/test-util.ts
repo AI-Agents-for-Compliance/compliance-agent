@@ -26,3 +26,37 @@ export function katalogMit(...a: Array<Partial<Anforderung> & { id?: string }>):
     })) as Anforderung[],
   };
 }
+
+// --- Builder für Graph-v1.0-Antwortformen (Listen als { value: [...] }) ---
+
+export const liste = (value: unknown[]) => ({ value });
+
+export interface Reg { userPrincipalName: string; isAdmin: boolean; isMfaRegistered: boolean; userType: string }
+
+export function reg(name: string, o: Partial<Reg> = {}): Reg {
+  return { userPrincipalName: `${name}@contoso.onmicrosoft.com`, isAdmin: false, isMfaRegistered: true, userType: "member", ...o };
+}
+
+/** `mitMfa` von `gesamt` Mitgliedern sind MFA-registriert. */
+export function regMitQuote(mitMfa: number, gesamt: number) {
+  return liste(Array.from({ length: gesamt }, (_, i) => reg(`u${i}`, { isMfaRegistered: i < mitMfa })));
+}
+
+/** Anteil `n` von `gesamt` Elementen erfüllt `wahr`, Rest `falsch`. */
+export function anteil<T>(n: number, gesamt: number, wahr: (i: number) => T, falsch: (i: number) => T): T[] {
+  return Array.from({ length: gesamt }, (_, i) => (i < n ? wahr(i) : falsch(i)));
+}
+
+export function caPolicy(o: {
+  state?: "enabled" | "disabled" | "enabledForReportingButNotEnforced";
+  includeUsers?: string[];
+  clientAppTypes?: string[];
+  builtInControls?: string[];
+} = {}) {
+  return {
+    displayName: "Policy",
+    state: o.state ?? "enabled",
+    conditions: { users: { includeUsers: o.includeUsers ?? ["All"] }, clientAppTypes: o.clientAppTypes ?? ["all"] },
+    grantControls: { operator: "OR", builtInControls: o.builtInControls ?? ["mfa"] },
+  };
+}
