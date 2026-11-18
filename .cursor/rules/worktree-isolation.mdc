@@ -1,0 +1,6 @@
+---
+description: Shared repository and task coordination rules for Cursor
+alwaysApply: true
+---
+
+Follow the repository-wide instructions in `AGENTS.md` and the task assignment in `docs/agent-workplan.md`. Work only in the worktree and branch assigned to this Cursor session. Do not modify another agent's worktree or work directly on `main`. Confirm ownership, scope, interfaces, and acceptance criteria before implementation. Report completed changes and checks to the coordinator.
