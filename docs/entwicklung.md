@@ -38,17 +38,18 @@ Alle sind rein lesend. Die Anwendung verwendet ausschließlich GET-Anfragen.
 Die App authentifiziert sich mit einem Zertifikat (kein Client Secret):
 
 ```bash
+mkdir -p secrets   # per .gitignore ausgeschlossen (ebenso *.pem und *.key)
 openssl req -x509 -newkey rsa:2048 -nodes -days 730 \
-  -keyout m365-key.pem -out m365-cert.pem -subj "/CN=compliance-agent"
-cat m365-key.pem m365-cert.pem > m365.pem   # PEM mit privatem Schlüssel und Zertifikat
+  -keyout secrets/m365-key.pem -out secrets/m365-cert.pem -subj "/CN=compliance-agent"
+cat secrets/m365-key.pem secrets/m365-cert.pem > secrets/m365.pem   # PEM mit privatem Schlüssel und Zertifikat
 ```
 
-- `m365-cert.pem` (öffentlich) in der App-Registrierung unter *Zertifikate & Geheimnisse > Zertifikate* hochladen.
-- `M365_CERT_PATH` zeigt auf `m365.pem` (enthält den privaten Schlüssel). Diese Datei niemals einchecken.
+- `secrets/m365-cert.pem` (öffentlich) in der App-Registrierung unter *Zertifikate & Geheimnisse > Zertifikate* hochladen.
+- `M365_CERT_PATH=./secrets/m365.pem` (enthält den privaten Schlüssel). Diese Dateien niemals einchecken.
 
 ## 3. Umgebungsvariablen
 
-`.env.example` nach `.env` kopieren und ausfüllen (für Next.js und Worker bzw. per `export` in der Shell; die Skripte lesen nur die Prozessumgebung):
+`.env.example` nach `.env` kopieren und ausfüllen (Next.js liest `.env` selbst; die `demo:*`-Skripte laden sie über `tsx --env-file-if-exists=.env`, der Worker nicht: dort die Variablen vorher exportieren, z. B. `set -a; . ./.env; set +a`). Ein Beispiel-Wert für `DEMO_BASIC_AUTH` steht schon in `.env.example`; der Docker-Compose-Postgres lauscht auf Port 5433, eine eigene Instanz meist auf 5432.
 
 | Variable | Bedeutung |
 |---|---|
@@ -92,6 +93,8 @@ pnpm demo:collect <tenantUuid>
 ```
 
 ## 6. Demo-Modus ohne Microsoft-Zugang
+
+> **Warnung:** `demo:setup --fake` und `demo:collect --fake` legen Fake-Mandanten, Verbindungen und Befunde an. Beide brechen ab, wenn `DATABASE_URL` nicht auf `localhost`, `127.0.0.1` oder `::1` zeigt (Override nur bewusst mit `ALLOW_DEMO=1`). Niemals gegen eine Produktionsdatenbank ausführen.
 
 ```bash
 pnpm demo:setup "Demo GmbH" --fake      # druckt die Tenant-UUID

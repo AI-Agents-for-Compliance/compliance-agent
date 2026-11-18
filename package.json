@@ -17,8 +17,8 @@
     "db:up": "docker compose up -d",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:generate": "drizzle-kit generate",
-    "demo:setup": "tsx scripts/demo-setup.ts",
-    "demo:collect": "tsx scripts/demo-collect.ts"
+    "demo:setup": "tsx --env-file-if-exists=.env scripts/demo-setup.ts",
+    "demo:collect": "tsx --env-file-if-exists=.env scripts/demo-collect.ts"
   },
   "dependencies": {
     "@azure/identity": "^4.14.1",

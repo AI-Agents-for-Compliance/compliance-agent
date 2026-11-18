@@ -4,6 +4,7 @@ import { createGraphFetcher } from "../src/collectors/m365/graph";
 import { closeDb } from "../src/db/client";
 import { findings } from "../src/db/schema";
 import { withTenant } from "../src/db/tenant";
+import { pruefeLokaleDatenbank } from "../src/demo/guard";
 import { createFakeGraphFetcher } from "../src/demo/fake-graph";
 import { runCollection } from "../src/jobs/collect-job";
 import { and, eq } from "drizzle-orm";
@@ -17,6 +18,10 @@ if (!tenantId) {
 }
 
 async function main(id: string) {
+  if (fake) pruefeLokaleDatenbank();
+  else if (!process.env.M365_CLIENT_ID || !process.env.M365_CERT_PATH) {
+    throw new Error("M365_CLIENT_ID und M365_CERT_PATH müssen gesetzt sein (siehe docs/entwicklung.md), oder mit --fake ausführen.");
+  }
   const katalog = loadCatalog("catalog", new Set(registry.keys()));
   const fetcherFor = fake ? () => createFakeGraphFetcher() : createGraphFetcher;
   const { runId, ergebnis } = await runCollection(id, { fetcherFor, katalog });
@@ -38,7 +43,7 @@ async function main(id: string) {
 
 main(tenantId)
   .catch((e) => {
-    console.error(e);
+    console.error(e instanceof Error && !e.stack?.includes("runCollection") ? `Fehler: ${e.message}` : e);
     process.exitCode = 1;
   })
   .finally(closeDb);
