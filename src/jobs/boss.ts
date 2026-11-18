@@ -4,12 +4,18 @@ import { COLLECT_ALL_JOB, COLLECT_JOB } from "./collect-job";
 let shared: PgBoss | undefined;
 
 /** Startet pg-boss (eigenes Schema "pgboss") und legt die Warteschlangen an. */
-export async function startBoss(connectionString: string = process.env.DATABASE_URL ?? ""): Promise<PgBoss> {
+export async function startBoss(
+  connectionString: string = process.env.DATABASE_URL ?? "",
+  schema?: string,
+): Promise<PgBoss> {
   if (!connectionString) throw new Error("DATABASE_URL fehlt");
-  const boss = new PgBoss(connectionString);
+  const boss = new PgBoss({ connectionString, ...(schema ? { schema } : {}) });
   boss.on("error", (e) => console.error("pg-boss:", e));
   await boss.start();
-  await boss.createQueue(COLLECT_JOB, { retryLimit: 3, retryDelay: 300, retryBackoff: true });
+  // Policy "exclusive": höchstens ein wartender oder laufender Job je singletonKey (Mandant).
+  // Mit der Standard-Policy wäre singletonKey wirkungslos. Eine spätere Änderung der Policy
+  // erfordert, die Queue neu anzulegen (deleteQueue + createQueue).
+  await boss.createQueue(COLLECT_JOB, { policy: "exclusive", retryLimit: 3, retryDelay: 300, retryBackoff: true });
   await boss.createQueue(COLLECT_ALL_JOB);
   shared = boss;
   return boss;

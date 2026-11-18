@@ -7,7 +7,7 @@ import { loadCatalog } from "../catalog/load";
 import type { Katalog } from "../catalog/schema";
 import { ENDPOINTS } from "../collectors/m365/endpoints";
 import { TokenError, TokenTransientError, type GraphFetcher } from "../collectors/m365/graph";
-import { COLLECT_JOB, runCollection } from "./collect-job";
+import { COLLECT_JOB, collectJobHandler, runCollection } from "./collect-job";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -106,5 +106,17 @@ describe("runCollection", () => {
     await expect(runCollection(B, deps(fetcherOk))).rejects.toThrow("keine aktive Microsoft-365-Verbindung");
     const n = await rows<{ n: number }>(B, sql`SELECT count(*)::int AS n FROM collection_runs`);
     expect(n[0].n).toBe(0);
+  });
+
+  it("Handler wirft bei vorübergehendem Fehler, damit pg-boss wiederholt", async () => {
+    await expect(collectJobHandler(A, deps(fetcherCrash(new TokenTransientError("Ausfall"))))).rejects.toThrow(
+      "fehlgeschlagen",
+    );
+  });
+
+  it("Prüfpfad-Code trägt den Fehlernamen", async () => {
+    await runCollection(A, deps(fetcherCrash(new TokenTransientError("Ausfall"))));
+    const [a] = await rows<{ details: { code: string } }>(A, sql`SELECT details FROM audit_events WHERE aktion = 'sammlung_fehlgeschlagen'`);
+    expect(a.details.code).toBe("TokenTransientError");
   });
 });

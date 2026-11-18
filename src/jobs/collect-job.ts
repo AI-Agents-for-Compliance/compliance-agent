@@ -79,24 +79,34 @@ export async function runCollection(
     return { runId, ergebnis: "ok" };
   } catch (e) {
     if (e instanceof ConsentRevokedError) {
-      await laufAbschliessen(tenantId, runId, "getrennt", async (tx) => {
+      try {
+        await laufAbschliessen(tenantId, runId, "getrennt", async (tx) => {
         await tx.update(m365Connections).set({ status: "getrennt" }).where(eq(m365Connections.id, conn.id));
         await recordAudit(tx, {
           actor: ACTOR,
           aktion: "verbindung_getrennt",
           details: { runId, code: e.name, meldung: e.message, ursache: e.cause instanceof Error ? e.cause.message : undefined },
         });
-      });
+        });
+      } catch (cleanupError) {
+        console.error(`Abschluss des getrennten Laufs ${runId} nicht protokolliert:`, cleanupError);
+        throw e;
+      }
       return { runId, ergebnis: "getrennt" };
     }
     const transient = e instanceof TokenTransientError;
-    await laufAbschliessen(tenantId, runId, "fehlgeschlagen", (tx) =>
-      recordAudit(tx, {
-        actor: ACTOR,
-        aktion: "sammlung_fehlgeschlagen",
-        details: { runId, code: e instanceof Error ? e.name : "Unbekannt", meldung: e instanceof Error ? e.message : String(e) },
-      }),
-    );
+    try {
+      await laufAbschliessen(tenantId, runId, "fehlgeschlagen", (tx) =>
+        recordAudit(tx, {
+          actor: ACTOR,
+          aktion: "sammlung_fehlgeschlagen",
+          details: { runId, code: e instanceof Error ? e.name : "Unbekannt", meldung: e instanceof Error ? e.message : String(e) },
+        }),
+      );
+    } catch (cleanupError) {
+      console.error(`Abschluss des fehlgeschlagenen Laufs ${runId} nicht protokolliert:`, cleanupError);
+      throw e;
+    }
     if (transient) return { runId, ergebnis: "fehlgeschlagen" };
     throw e;
   }

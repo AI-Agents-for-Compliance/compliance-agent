@@ -24,6 +24,7 @@ async function main() {
       .from(m365Connections)
       .where(eq(m365Connections.status, "aktiv"));
     for (const { tenantId } of aktive) await enqueueCollection(tenantId);
+    console.log(`Tägliche Sammlung: ${aktive.length} Mandant(en) eingereiht`);
   });
   await boss.schedule(COLLECT_ALL_JOB, "0 3 * * *", null, { tz: "Europe/Berlin" });
 
