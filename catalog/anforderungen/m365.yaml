@@ -1,0 +1,81 @@
+anforderungen:
+  - id: M365-ADMIN-MFA
+    bereich: 10
+    titel: "Administratoren nutzen MFA"
+    beschreibung: "Alle Administratorkonten sind durch Multi-Faktor-Authentifizierung geschützt."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 10 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-ADMIN-MFA
+    gewicht: 3
+  - id: M365-USER-MFA
+    bereich: 10
+    titel: "Benutzer nutzen MFA"
+    beschreibung: "Alle regulären Benutzerkonten sind für Multi-Faktor-Authentifizierung registriert."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 10 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-USER-MFA
+    gewicht: 2
+  - id: M365-MFA-ERZWUNGEN
+    bereich: 10
+    titel: "MFA wird per Richtlinie erzwungen"
+    beschreibung: "Eine Conditional-Access-Richtlinie oder Security Defaults erzwingen MFA für Anmeldungen."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 10 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-MFA-ERZWUNGEN
+    gewicht: 3
+  - id: M365-LEGACY-AUTH
+    bereich: 9
+    titel: "Legacy-Authentifizierung blockiert"
+    beschreibung: "Veraltete Anmeldeprotokolle ohne MFA-Unterstützung sind per Richtlinie gesperrt."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 9 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-LEGACY-AUTH
+    gewicht: 3
+  - id: M365-GLOBAL-ADMINS
+    bereich: 9
+    titel: "Wenige Globale Administratoren"
+    beschreibung: "Die Zahl der Konten mit der Rolle Globaler Administrator ist auf das notwendige Minimum begrenzt."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 9 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-GLOBAL-ADMINS
+    gewicht: 2
+  - id: M365-GAESTE
+    bereich: 9
+    titel: "Gastzugriffe kontrolliert"
+    beschreibung: "Gastkonten sind erfasst, begrenzt und werden regelmäßig überprüft."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 9 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-GAESTE
+    gewicht: 2
+  - id: M365-INAKTIVE-KONTEN
+    bereich: 9
+    titel: "Keine inaktiven Konten"
+    beschreibung: "Konten ohne Anmeldung in den letzten 90 Tagen werden deaktiviert oder entfernt."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 9 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-INAKTIVE-KONTEN
+    gewicht: 2
+  - id: M365-GERAETE-VERSCHL
+    bereich: 8
+    titel: "Geräte sind verschlüsselt"
+    beschreibung: "Verwaltete Geräte verfügen über aktivierte Festplattenverschlüsselung."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 8 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-GERAETE-VERSCHL
+    gewicht: 2
+  - id: M365-GERAETE-COMPLIANCE
+    bereich: 7
+    titel: "Geräte erfüllen Compliance-Richtlinien"
+    beschreibung: "Verwaltete Geräte sind laut Intune als konform eingestuft."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 7 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-GERAETE-COMPLIANCE
+    gewicht: 2
+  - id: M365-SECURE-SCORE
+    bereich: 6
+    titel: "Microsoft Secure Score ausreichend"
+    beschreibung: "Der Secure Score des Mandanten erreicht einen angemessenen Wert und wird beobachtet."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 6 BSIG"
+    nachweisart: automatisch
+    pruefung: M365-SECURE-SCORE
+    gewicht: 2

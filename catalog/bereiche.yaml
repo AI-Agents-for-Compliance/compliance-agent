@@ -1,0 +1,32 @@
+version: "2026-11-18-entwurf"
+bereiche:
+  - nr: 1
+    titel: "Risikoanalyse und Sicherheit der Informationssysteme"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 1 BSIG"
+  - nr: 2
+    titel: "Bewältigung von Sicherheitsvorfällen"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 2 BSIG"
+  - nr: 3
+    titel: "Aufrechterhaltung des Betriebs, Backup-Management, Krisenmanagement"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 3 BSIG"
+  - nr: 4
+    titel: "Sicherheit der Lieferkette"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 4 BSIG"
+  - nr: 5
+    titel: "Sicherheit bei Erwerb, Entwicklung und Wartung von Systemen"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 5 BSIG"
+  - nr: 6
+    titel: "Bewertung der Wirksamkeit von Risikomanagementmaßnahmen"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 6 BSIG"
+  - nr: 7
+    titel: "Cyberhygiene und Schulungen"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 7 BSIG"
+  - nr: 8
+    titel: "Kryptografie und Verschlüsselung"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 8 BSIG"
+  - nr: 9
+    titel: "Personal, Zugriffskontrolle und Anlagenmanagement"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 9 BSIG"
+  - nr: 10
+    titel: "Multi-Faktor-Authentifizierung und gesicherte Kommunikation"
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 10 BSIG"

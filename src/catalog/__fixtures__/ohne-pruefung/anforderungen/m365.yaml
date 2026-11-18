@@ -1,0 +1,8 @@
+anforderungen:
+  - id: M365-ADMIN-MFA
+    bereich: 10
+    titel: "Administratoren nutzen MFA"
+    beschreibung: "Alle Administratorkonten sind durch Multi-Faktor-Authentifizierung geschützt."
+    rechtsgrundlage: "§ 30 Abs. 2 Nr. 10 BSIG"
+    nachweisart: automatisch
+    gewicht: 3
