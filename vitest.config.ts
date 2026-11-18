@@ -14,6 +14,6 @@ export default defineConfig({
     globalSetup: ["./src/db/test-setup.ts"],
     // Alle DB-Tests teilen sich eine Datenbank: Dateien nacheinander ausfuehren.
     fileParallelism: false,
-    env: { DATABASE_URL: testDb, TEST_DATABASE_URL: testDb },
+    env: { DB_POOL_MAX: "1", DATABASE_URL: testDb, TEST_DATABASE_URL: testDb },
   },
 });

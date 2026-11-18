@@ -1,9 +1,11 @@
--- App-Rolle ohne BYPASSRLS (idempotent). Superuser und Tabelleneigentuemer umgehen RLS,
+-- App-Rolle ohne BYPASSRLS, NOLOGIN und ohne Passwort (idempotent; wird nur per SET ROLE genutzt). Superuser und Tabelleneigentuemer umgehen RLS,
 -- daher fuehrt withTenant() jede Transaktion per SET LOCAL ROLE als app_user aus.
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
-    CREATE ROLE app_user LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'app_user';
+    CREATE ROLE app_user NOLOGIN NOSUPERUSER NOBYPASSRLS;
+  ELSE
+    ALTER ROLE app_user NOLOGIN NOSUPERUSER NOBYPASSRLS PASSWORD NULL;
   END IF;
 END
 $$;--> statement-breakpoint
@@ -17,6 +19,8 @@ END
 $$;--> statement-breakpoint
 GRANT USAGE ON SCHEMA public TO app_user;--> statement-breakpoint
 GRANT SELECT ON tenants TO app_user;--> statement-breakpoint
+-- UPDATE/DELETE auch auf audit_events/evidence_snapshots: so feuert der Trigger und liefert 'Eintrag ist unveränderlich'
+-- statt eines bloßen permission-denied.
 GRANT SELECT, INSERT, UPDATE, DELETE ON m365_connections, evidence_snapshots, findings, collection_runs, audit_events TO app_user;--> statement-breakpoint
 
 -- Mandantentrennung: fehlender oder leerer app.tenant_id (nach COMMIT bleibt '') -> NULL -> keine Zeilen.

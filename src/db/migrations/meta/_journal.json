@@ -15,6 +15,13 @@
       "when": 1794998699500,
       "tag": "0001_rls_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794998699501,
+      "tag": "0002_app_user_nologin",
+      "breakpoints": true
     }
   ]
 }

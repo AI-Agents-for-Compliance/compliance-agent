@@ -49,6 +49,20 @@ describe("Mandantentrennung (RLS)", () => {
     expect(rows).toHaveLength(0);
   });
 
+  it("UPDATE auf fremden Mandanten scheitert", async () => {
+    await withTenant(A, (tx) => tx.insert(findings).values(befund(A)));
+    expect(
+      await fehlermeldung(withTenant(A, (tx) => tx.update(findings).set({ tenantId: B }))),
+    ).toMatch(/row-level security/);
+  });
+
+  it("app_user kann sich nicht anmelden", async () => {
+    const r = await withTenant(A, (tx) =>
+      tx.execute(sql`SELECT rolcanlogin FROM pg_roles WHERE rolname = 'app_user'`),
+    );
+    expect(r[0]).toEqual({ rolcanlogin: false });
+  });
+
   it("Mandanten-ID wird validiert", async () => {
     expect(
       await fehlermeldung(withTenant("x'; drop table findings;--", async () => 1)),
@@ -56,11 +70,13 @@ describe("Mandantentrennung (RLS)", () => {
   });
 
   it("Mandantenkontext leckt nicht zwischen Transaktionen", async () => {
-    await withTenant(A, async () => 1);
+    // Pool ist in Tests auf 1 Verbindung begrenzt (DB_POOL_MAX), beide Transaktionen teilen sie also.
+    const pid1 = await withTenant(A, async (tx) => (await tx.execute(sql`SELECT pg_backend_pid() AS p`))[0]!.p);
     const rows = await getDb().transaction(async (tx) => {
       await tx.execute(sql`SET LOCAL ROLE app_user`);
-      return tx.execute(sql`SELECT current_setting('app.tenant_id', true) AS t`);
+      return tx.execute(sql`SELECT current_setting('app.tenant_id', true) AS t, pg_backend_pid() AS p`);
     });
+    expect(rows[0]!.p).toBe(pid1);
     expect(rows[0]!.t === null || rows[0]!.t === "").toBe(true);
   });
 });

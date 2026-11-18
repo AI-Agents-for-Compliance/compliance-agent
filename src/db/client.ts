@@ -5,7 +5,7 @@ import * as schema from "./schema";
 export const DEFAULT_DATABASE_URL = "postgresql://dev:dev@localhost:5432/compliance";
 
 export function createDb(url: string = process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL) {
-  const sql = postgres(url, { max: 5, onnotice: () => {} });
+  const sql = postgres(url, { max: Number(process.env.DB_POOL_MAX ?? 5), onnotice: () => {} });
   return { sql, db: drizzle(sql, { schema }) };
 }
 
