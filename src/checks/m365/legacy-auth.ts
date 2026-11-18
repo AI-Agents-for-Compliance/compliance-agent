@@ -1,10 +1,10 @@
 import type { Check } from "../types";
-import { caRichtlinien, ergebnis, SD_CA_KEYS, securityDefaultsAktiv, type CaPolicy } from "./util";
+import { bewerteRichtlinien, caRichtlinien, ergebnis, SD_CA_KEYS, securityDefaultsAktiv, type CaPolicy } from "./util";
 
-const blockiertLegacy = (p: CaPolicy) => {
+const blockiertLegacy = (p: CaPolicy): string[] | undefined => {
   const apps = p.conditions?.clientAppTypes ?? [];
   return apps.includes("exchangeActiveSync") && apps.includes("other")
-    && p.grantControls?.builtInControls?.includes("block") === true;
+    && p.grantControls?.builtInControls?.includes("block") === true ? [] : undefined;
 };
 
 export const legacyAuth: Check = {
@@ -17,15 +17,15 @@ export const legacyAuth: Check = {
     }
     const ca = caRichtlinien(e);
     if ("result" in ca) return ca.result;
-    const passend = ca.policies.filter(blockiertLegacy);
-    if (passend.some((p) => p.state === "enabled")) {
-      return ergebnis(e, SD_CA_KEYS, "erfuellt", "Eine aktive Conditional-Access-Richtlinie blockiert Legacy-Authentifizierung.");
+    const b = bewerteRichtlinien(ca.policies, blockiertLegacy);
+    if (b?.status === "erfuellt") {
+      return ergebnis(e, SD_CA_KEYS, "erfuellt",
+        `Eine aktive Conditional-Access-Richtlinie blockiert Legacy-Authentifizierung für alle${b.detail ? ` (${b.detail})` : ""}.`);
     }
-    if (passend.some((p) => p.state === "enabledForReportingButNotEnforced")) {
-      return ergebnis(e, SD_CA_KEYS, "teilweise",
-        "Eine Richtlinie zur Blockierung von Legacy-Authentifizierung ist nur im Berichtsmodus und wird nicht durchgesetzt.");
+    if (b) {
+      return ergebnis(e, SD_CA_KEYS, "teilweise", `Eine Richtlinie blockiert Legacy-Authentifizierung, aber ${b.detail}.`);
     }
     return ergebnis(e, SD_CA_KEYS, "nicht_erfuellt",
-      "Security Defaults sind aus und keine aktive Richtlinie blockiert Legacy-Authentifizierung.");
+      "Security Defaults sind aus und keine Richtlinie blockiert Legacy-Authentifizierung.");
   },
 };

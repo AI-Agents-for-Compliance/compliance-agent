@@ -26,4 +26,18 @@ describe("M365-LEGACY-AUTH", () => {
   it("MFA statt Block → nicht_erfuellt", () =>
     expect(run(false, [caPolicy({ clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["mfa"] })]).status).toBe("nicht_erfuellt"));
   it("keine Richtlinien → nicht_erfuellt", () => expect(run(false, []).status).toBe("nicht_erfuellt"));
+  it("Pilotgruppe → teilweise", () => {
+    const r = run(false, [caPolicy({ includeUsers: ["pilot-group"], clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["block"] })]);
+    expect(r.status).toBe("teilweise");
+    expect(r.begruendung).toContain("ausgewählte Benutzer/Gruppen");
+  });
+  it("excludeGroups → teilweise", () =>
+    expect(run(false, [caPolicy({ excludeGroups: ["g"], clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["block"] })]).status).toBe("teilweise"));
+  it("3 ausgeschlossene Benutzer → teilweise, 2 → erfuellt", () => {
+    const base = { clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["block"] };
+    expect(run(false, [caPolicy({ ...base, excludeUsers: ["a", "b", "c"] })]).status).toBe("teilweise");
+    expect(run(false, [caPolicy({ ...base, excludeUsers: ["a", "b"] })]).status).toBe("erfuellt");
+  });
+  it("nur eine Anwendung → teilweise", () =>
+    expect(run(false, [caPolicy({ applications: ["app-1"], clientAppTypes: ["exchangeActiveSync", "other"], builtInControls: ["block"] })]).status).toBe("teilweise"));
 });

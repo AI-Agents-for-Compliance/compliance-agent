@@ -28,8 +28,39 @@ describe("M365-MFA-ERZWUNGEN", () => {
   it("aktive CA für alle mit MFA → erfuellt", () => expect(run(false, [caPolicy()]).status).toBe("erfuellt"));
   it("CA mit MFA nur für bestimmte Nutzer → teilweise", () =>
     expect(run(false, [caPolicy({ includeUsers: ["u-1"] })]).status).toBe("teilweise"));
-  it("CA mit MFA nur im Berichtsmodus → nicht_erfuellt", () =>
-    expect(run(false, [caPolicy({ state: "enabledForReportingButNotEnforced" })]).status).toBe("nicht_erfuellt"));
+  it("CA mit MFA nur im Berichtsmodus → teilweise", () => {
+    const r = run(false, [caPolicy({ state: "enabledForReportingButNotEnforced" })]);
+    expect(r.status).toBe("teilweise");
+    expect(r.begruendung).toContain("nur im Berichtsmodus");
+  });
+  it("Pilotgruppe → teilweise", () => {
+    const r = run(false, [caPolicy({ includeUsers: ["GuestsOrExternalUsers"] })]);
+    expect(r.status).toBe("teilweise");
+    expect(r.begruendung).toContain("ausgewählte Benutzer/Gruppen");
+  });
+  it("All mit 3 ausgeschlossenen Benutzern → teilweise", () => {
+    const r = run(false, [caPolicy({ excludeUsers: ["a", "b", "c"] })]);
+    expect(r.status).toBe("teilweise");
+    expect(r.begruendung).toContain("3 ausgeschlossene Benutzer");
+  });
+  it("All mit 2 ausgeschlossenen Benutzern → erfuellt (Notfallzugang)", () => {
+    const r = run(false, [caPolicy({ excludeUsers: ["a", "b"] })]);
+    expect(r.status).toBe("erfuellt");
+    expect(r.begruendung).toContain("2 Ausnahmekonten (Notfallzugang)");
+  });
+  it("excludeGroups → teilweise", () => expect(run(false, [caPolicy({ excludeGroups: ["g"] })]).status).toBe("teilweise"));
+  it("excludeRoles → teilweise", () => expect(run(false, [caPolicy({ excludeRoles: ["r"] })]).status).toBe("teilweise"));
+  it("nur eine Anwendung → teilweise", () => {
+    const r = run(false, [caPolicy({ applications: ["app-1"] })]);
+    expect(r.status).toBe("teilweise");
+    expect(r.begruendung).toContain("ausgewählte Anwendungen");
+  });
+  it("MFA OR compliantDevice → teilweise (MFA nicht zwingend)", () =>
+    expect(run(false, [caPolicy({ builtInControls: ["mfa", "compliantDevice"], operator: "OR" })]).status).toBe("teilweise"));
+  it("MFA AND compliantDevice → erfuellt", () =>
+    expect(run(false, [caPolicy({ builtInControls: ["mfa", "compliantDevice"], operator: "AND" })]).status).toBe("erfuellt"));
+  it("authenticationStrength → erfuellt", () =>
+    expect(run(false, [caPolicy({ builtInControls: [], authenticationStrength: { id: "x" } })]).status).toBe("erfuellt"));
   it("deaktivierte CA → nicht_erfuellt", () => expect(run(false, [caPolicy({ state: "disabled" })]).status).toBe("nicht_erfuellt"));
   it("CA ohne MFA-Control → nicht_erfuellt", () =>
     expect(run(false, [caPolicy({ builtInControls: ["compliantDevice"] })]).status).toBe("nicht_erfuellt"));

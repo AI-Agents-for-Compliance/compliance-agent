@@ -1,5 +1,5 @@
 import type { Check } from "../types";
-import { caRichtlinien, ergebnis, SD_CA_KEYS, securityDefaultsAktiv } from "./util";
+import { bewerteRichtlinien, caRichtlinien, ergebnis, mfaWirkung, SD_CA_KEYS, securityDefaultsAktiv } from "./util";
 
 export const mfaErzwungen: Check = {
   id: "M365-MFA-ERZWUNGEN",
@@ -11,17 +11,15 @@ export const mfaErzwungen: Check = {
     }
     const ca = caRichtlinien(e);
     if ("result" in ca) return ca.result;
-    const mitMfa = ca.policies.filter(
-      (p) => p.state === "enabled" && p.grantControls?.builtInControls?.includes("mfa"),
-    );
-    if (mitMfa.some((p) => p.conditions?.users?.includeUsers?.includes("All"))) {
-      return ergebnis(e, SD_CA_KEYS, "erfuellt", "Eine aktive Conditional-Access-Richtlinie erzwingt MFA für alle Benutzer.");
+    const b = bewerteRichtlinien(ca.policies, mfaWirkung);
+    if (b?.status === "erfuellt") {
+      return ergebnis(e, SD_CA_KEYS, "erfuellt",
+        `Eine aktive Conditional-Access-Richtlinie erzwingt MFA für alle Benutzer und Anwendungen${b.detail ? ` (${b.detail})` : ""}.`);
     }
-    if (mitMfa.length > 0) {
-      return ergebnis(e, SD_CA_KEYS, "teilweise",
-        `${mitMfa.length} aktive Conditional-Access-Richtlinie(n) erzwingen MFA, aber nicht für alle Benutzer.`);
+    if (b) {
+      return ergebnis(e, SD_CA_KEYS, "teilweise", `Eine Conditional-Access-Richtlinie erzwingt MFA, aber ${b.detail}.`);
     }
     return ergebnis(e, SD_CA_KEYS, "nicht_erfuellt",
-      "Security Defaults sind aus und keine aktive Conditional-Access-Richtlinie erzwingt MFA.");
+      "Security Defaults sind aus und keine Conditional-Access-Richtlinie erzwingt MFA zwingend.");
   },
 };

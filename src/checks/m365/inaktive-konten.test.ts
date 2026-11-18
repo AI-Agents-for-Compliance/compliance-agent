@@ -24,9 +24,16 @@ describe("M365-INAKTIVE-KONTEN", () => {
     expect(run([user("a", { signInActivity: { lastSignInDateTime: tage(91) } })]).status).toBe("nicht_erfuellt");
   });
   it("fehlende signInActivity / null-Datum zählt als inaktiv", () => {
-    expect(run([user("a", { signInActivity: undefined })]).status).toBe("nicht_erfuellt");
+    expect(run([user("a", { signInActivity: undefined }), user("b")]).status).toBe("nicht_erfuellt");
     expect(run([user("a", { signInActivity: { lastSignInDateTime: null } })]).status).toBe("nicht_erfuellt");
   });
+  it("ungültiges Datum zählt als inaktiv", () =>
+    expect(run([user("a", { signInActivity: { lastSignInDateTime: "kaputt" } })]).status).toBe("nicht_erfuellt"));
+  it("userType case-insensitiv", () =>
+    expect(run([user("a", { userType: "member" })]).begruendung).toContain("0 von 1"));
+  it("keine signInActivity bei keinem Konto → nicht_pruefbar", () =>
+    expect(run([user("a", { signInActivity: undefined }), user("b", { signInActivity: undefined })])).toMatchObject({
+      status: "nicht_pruefbar", begruendung: "Anmeldedaten nicht verfügbar" }));
   it("deaktivierte Konten und Gäste sind nicht in der Basis", () => {
     const r = run([user("a"), user("d", { accountEnabled: false, signInActivity: undefined }), user("g", { userType: "Guest", signInActivity: undefined })]);
     expect(r.status).toBe("erfuellt");

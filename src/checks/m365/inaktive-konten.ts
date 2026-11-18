@@ -17,12 +17,17 @@ export function createInaktiveKontenCheck(now: () => Date): Check {
     benoetigt: [...KEYS],
     run(e) {
       const basis = listeAus<User>(e["m365.users"]?.data)
-        .filter((u) => u.accountEnabled === true && u.userType === "Member");
+        .filter((u) => u.accountEnabled === true && u.userType?.toLowerCase() === "member");
       if (basis.length === 0) return nichtPruefbar(e, [...KEYS], "keine aktiven Konten");
+      if (!basis.some((u) => u.signInActivity !== undefined)) {
+        return nichtPruefbar(e, [...KEYS], "Anmeldedaten nicht verfügbar");
+      }
       const grenze = now().getTime() - TAGE_MS;
       const inaktiv = basis.filter((u) => {
         const t = u.signInActivity?.lastSignInDateTime;
-        return !t || new Date(t).getTime() < grenze;
+        if (!t) return true;
+        const ms = new Date(t).getTime();
+        return Number.isNaN(ms) || ms < grenze;
       }).length;
       const anteil = inaktiv / basis.length;
       const status = anteil <= 0.05 ? "erfuellt" : anteil <= 0.15 ? "teilweise" : "nicht_erfuellt";

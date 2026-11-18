@@ -12,7 +12,8 @@ describe("M365-GLOBAL-ADMINS", () => {
     expect(r.status).toBe("nicht_erfuellt");
     expect(r.begruendung).toContain("1");
   });
-  it("0 Admins → nicht_erfuellt", () => expect(run(0).status).toBe("nicht_erfuellt"));
+  it("0 Admins → nicht_pruefbar", () =>
+    expect(run(0)).toMatchObject({ status: "nicht_pruefbar", begruendung: "keine globalen Administratoren gefunden" }));
   it("5 Admins → nicht_erfuellt mit Anzahl", () => {
     const r = run(5);
     expect(r.status).toBe("nicht_erfuellt");

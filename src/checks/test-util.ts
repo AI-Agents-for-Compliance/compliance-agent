@@ -50,13 +50,32 @@ export function anteil<T>(n: number, gesamt: number, wahr: (i: number) => T, fal
 export function caPolicy(o: {
   state?: "enabled" | "disabled" | "enabledForReportingButNotEnforced";
   includeUsers?: string[];
+  excludeUsers?: string[];
+  excludeGroups?: string[];
+  excludeRoles?: string[];
+  applications?: string[];
   clientAppTypes?: string[];
   builtInControls?: string[];
+  operator?: "AND" | "OR";
+  authenticationStrength?: unknown;
 } = {}) {
   return {
     displayName: "Policy",
     state: o.state ?? "enabled",
-    conditions: { users: { includeUsers: o.includeUsers ?? ["All"] }, clientAppTypes: o.clientAppTypes ?? ["all"] },
-    grantControls: { operator: "OR", builtInControls: o.builtInControls ?? ["mfa"] },
+    conditions: {
+      users: {
+        includeUsers: o.includeUsers ?? ["All"],
+        excludeUsers: o.excludeUsers ?? [],
+        excludeGroups: o.excludeGroups ?? [],
+        excludeRoles: o.excludeRoles ?? [],
+      },
+      applications: { includeApplications: o.applications ?? ["All"] },
+      clientAppTypes: o.clientAppTypes ?? ["all"],
+    },
+    grantControls: {
+      operator: o.operator ?? "OR",
+      builtInControls: o.builtInControls ?? ["mfa"],
+      authenticationStrength: o.authenticationStrength ?? null,
+    },
   };
 }

@@ -18,4 +18,9 @@ describe("M365-SECURE-SCORE", () => {
   it("maxScore 0 → nicht_pruefbar", () =>
     expect(run([s(0, 0)])).toMatchObject({ status: "nicht_pruefbar", begruendung: "kein Secure Score verfügbar" }));
   it("keine Einträge → nicht_pruefbar", () => expect(run([]).begruendung).toBe("kein Secure Score verfügbar"));
+  it("nicht-endliche Werte → nicht_pruefbar", () => {
+    expect(run([s(Number.NaN, 100)]).status).toBe("nicht_pruefbar");
+    expect(run([s(10, Infinity)]).status).toBe("nicht_pruefbar");
+    expect(run([{ currentScore: "x", maxScore: 100, createdDateTime: "2026-05-01T00:00:00Z" }]).status).toBe("nicht_pruefbar");
+  });
 });

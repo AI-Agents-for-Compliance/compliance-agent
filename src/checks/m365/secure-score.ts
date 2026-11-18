@@ -14,7 +14,7 @@ export const secureScore: Check = {
       (a, s) => (!a || new Date(s.createdDateTime).getTime() > new Date(a.createdDateTime).getTime() ? s : a),
       undefined,
     );
-    if (!neuester || !(neuester.maxScore > 0)) return nichtPruefbar(e, [...KEYS], "kein Secure Score verfügbar");
+    if (!neuester || !(neuester.maxScore > 0) || !Number.isFinite(neuester.maxScore) || !Number.isFinite(neuester.currentScore)) return nichtPruefbar(e, [...KEYS], "kein Secure Score verfügbar");
     const anteil = neuester.currentScore / neuester.maxScore;
     return ergebnis(e, [...KEYS], stufe(anteil, { erfuelltAb: 0.6, teilweiseAb: 0.4 }),
       `Secure Score ${neuester.currentScore} von ${neuester.maxScore} (${Math.round(anteil * 100)} %).`);
