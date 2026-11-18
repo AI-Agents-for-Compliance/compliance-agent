@@ -13,6 +13,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from engine import evaluate_case
+from intake_agent import assistant_reply, extract_proposals, next_question
 
 ROOT = Path(__file__).parent
 WEB_ROOT = ROOT / "web"
@@ -93,7 +94,12 @@ def ensure_data() -> None:
 def load_cases() -> list[dict[str, Any]]:
     ensure_data()
     with LOCK:
-        return json.loads(DATA_FILE.read_text(encoding="utf-8"))
+        cases = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    # Keep generated data from earlier demo versions readable.
+    for case in cases:
+        case.setdefault("intake_log", [])
+        case.setdefault("pending_facts", [])
+    return cases
 
 
 def save_cases(cases: list[dict[str, Any]]) -> None:
@@ -157,6 +163,36 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"error": str(exc)}, 400)
             return
         cases = load_cases()
+        if path == "/api/cases/intake":
+            created_at = now()
+            case: dict[str, Any] = {
+                "id": str(uuid.uuid4()),
+                "reference": f"EXP-{datetime.now().year}-{uuid.uuid4().hex[:4].upper()}",
+                "status": "open",
+                "created_at": created_at,
+                "company": "",
+                "product": "",
+                "destination": "",
+                "end_user": "",
+                "end_use": "",
+                "classification": "",
+                "restricted_party_screening": "",
+                "destination_risk": "",
+                "license_required": None,
+                "license_status": None,
+                "pending_facts": [],
+                "intake_log": [],
+                "audit_log": [{"at": created_at, "actor": "Demo-System", "action": "CASE_CREATED", "detail": "Neuer synthetischer Intake-Fall angelegt."}],
+            }
+            case["evaluation"] = evaluate_case(case)
+            opening = assistant_reply(case, [])
+            case["intake_log"].append({"at": created_at, "role": "assistant", "text": opening["message"], "question": opening["question"]})
+            case["audit_log"].append({"at": created_at, "actor": "Intake-Agent", "action": "INTAKE_STARTED", "detail": "Geführte Falleingabe gestartet."})
+            case["audit_log"].append({"at": created_at, "actor": "Demo-System", "action": "RULES_EVALUATED", "detail": f"Regelwerk {case['evaluation']['ruleset_version']} ausgeführt."})
+            cases.append(case)
+            save_cases(cases)
+            self.send_json({"case": case, "reply": opening}, 201)
+            return
         if path == "/api/cases":
             required = ["company", "product", "destination", "end_user"]
             missing = [field for field in required if not str(payload.get(field, "")).strip()]
@@ -185,6 +221,46 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(case, 201)
             return
         parts = path.strip("/").split("/")
+        if len(parts) == 4 and parts[:2] == ["api", "cases"] and parts[3] == "intake":
+            case = next((c for c in cases if c["id"] == parts[2]), None)
+            if not case:
+                self.send_json({"error": "Fall nicht gefunden"}, 404)
+                return
+            if case["status"] != "open":
+                self.send_json({"error": "Ein bereits geprüfter Fall kann nicht weiter bearbeitet werden."}, 409)
+                return
+            if payload.get("confirm") is True:
+                proposals = case.get("pending_facts", [])
+                if not proposals:
+                    self.send_json({"error": "Es gibt keine Angaben zur Bestätigung."}, 400)
+                    return
+                for proposal in proposals:
+                    case[proposal["field"]] = proposal["value"]
+                case["pending_facts"] = []
+                case["evaluation"] = evaluate_case(case)
+                confirmed_labels = ", ".join(item["label"] for item in proposals)
+                event_at = now()
+                case["audit_log"].append({"at": event_at, "actor": "Mitarbeitende Person", "action": "INTAKE_FACTS_CONFIRMED", "detail": f"Bestätigt: {confirmed_labels}."})
+                case["audit_log"].append({"at": event_at, "actor": "Demo-System", "action": "RULES_EVALUATED", "detail": f"Regelwerk {case['evaluation']['ruleset_version']} nach bestätigten Angaben ausgeführt."})
+                reply = assistant_reply(case, [])
+                case["intake_log"].append({"at": event_at, "role": "assistant", "text": reply["message"], "question": reply["question"]})
+                save_cases(cases)
+                self.send_json({"case": case, "reply": reply})
+                return
+            message = str(payload.get("message", "")).strip()
+            if not message:
+                self.send_json({"error": "Bitte eine Antwort eingeben oder vorgeschlagene Angaben bestätigen."}, 400)
+                return
+            proposals = extract_proposals(case, message)
+            reply = assistant_reply(case, proposals)
+            event_at = now()
+            case["pending_facts"] = proposals
+            case["intake_log"].append({"at": event_at, "role": "user", "text": message})
+            case["intake_log"].append({"at": event_at, "role": "assistant", "text": reply["message"], "question": reply["question"], "proposals": proposals})
+            case["audit_log"].append({"at": event_at, "actor": "Intake-Agent", "action": "INTAKE_RESPONSE_RECORDED", "detail": "Antwort erfasst; Faktenvorschläge warten auf Bestätigung." if proposals else "Antwort erfasst; Rückfrage gestellt."})
+            save_cases(cases)
+            self.send_json({"case": case, "reply": reply})
+            return
         if len(parts) == 4 and parts[:2] == ["api", "cases"] and parts[3] == "review":
             case = next((c for c in cases if c["id"] == parts[2]), None)
             decision = payload.get("decision")

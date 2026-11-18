@@ -16,6 +16,9 @@ Open <http://127.0.0.1:8010>. Stop the server with `Ctrl+C`. Demo cases and revi
 ## What the prototype demonstrates
 
 - Three synthetic export cases with different outcomes.
+- A guided intake agent that collects one fact at a time, proposes explicit
+  values from labelled input, and requires the participant to confirm every
+  proposal before it becomes part of the case.
 - A versioned deterministic policy evaluator. Each check returns `TRUE`, `FALSE`, or `UNKNOWN` with an explanation and a rule reference.
 - Missing information becomes a follow-up question.
 - Conflicts and complete cases both remain subject to human review.
@@ -35,6 +38,20 @@ server.py (Python standard library HTTP server)
 ```
 
 There is no LLM in the critical decision path. The model's future role should be limited to extracting candidate facts from documents and proposing questions; the deterministic rules and an authorized human reviewer remain in control.
+
+## Guided intake agent
+
+Use **+ Geführte Eingabe** to create an empty synthetic case. The agent asks
+for the next missing fact, or can read explicitly labelled input such as
+`Unternehmen: Demo GmbH; Produkt: Sensormodul`. It displays suggestions before
+they are stored. Only **Angaben bestätigen & prüfen** writes those values to the
+case and re-runs the deterministic rules.
+
+The current agent is a conservative, dependency-free parser rather than an LLM.
+It intentionally declines ambiguous statements and asks a follow-up question.
+This gives a future LLM adapter one narrow role: return the same unconfirmed
+fact-proposal shape. It must not set rule outcomes, make legal assertions, or
+record a human decision.
 
 ## Rule outcomes
 
