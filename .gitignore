@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+.turbo/
+.vercel/
+out/
+
+# Env files: keep only safe templates in Git.
+.env*
+!.env.example
+
+# Local demo persistence
+export-compliance-copilot/data/cases.json
+
+# Certificates and keys
+*.pem
+
+# OS
+.DS_Store

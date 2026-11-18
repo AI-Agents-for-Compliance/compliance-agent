@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Export Compliance Copilot · Demo</title><link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/"><span class="mark">C</span><span>Compliance Copilot<small>DEMO WORKSPACE</small></span></a><div class="top-actions"><span class="demo-tag">SYNTHETISCHE DATEN</span><button id="new-case" class="primary">+ Neuer Fall</button></div></header>
+  <main>
+    <section class="hero"><div><p class="eyebrow">EXPORT COMPLIANCE · PILOT</p><h1>Prüfen. Nachfragen.<br><em>Nachvollziehbar entscheiden.</em></h1><p class="intro">Ein kleiner Workflow-Prototyp für interne Exportprüfungen. Regeln zeigen offene Punkte und bereiten menschliche Prüfung vor.</p></div><div class="hero-note"><span class="pulse"></span><div><strong>Entscheidung bleibt beim Menschen</strong><small>Regeln sind illustrativ und keine Rechtsberatung.</small></div></div></section>
+    <section class="metrics" id="metrics"></section>
+    <div class="workspace"><section class="case-list"><div class="section-head"><div><p class="eyebrow">WORK QUEUE</p><h2>Prüffälle</h2></div><select id="filter"><option value="all">Alle Fälle</option><option value="open">Offen</option><option value="reviewed">Menschlich geprüft</option></select></div><div id="cases" class="cases"></div></section>
+    <section class="detail" id="detail"><div class="empty"><div class="empty-icon">↗</div><h2>Wähle einen Fall</h2><p>Prüfergebnis, Rückfragen und Audit-Log werden hier angezeigt.</p></div></section></div>
+    <footer><span>Compliance Copilot · Produktname offen</span><span>Demo-Regelwerk · Version 1.0</span></footer>
+  </main>
+  <dialog id="case-dialog"><form id="case-form" method="dialog"><div class="dialog-head"><div><p class="eyebrow">NEUER DEMO-FALL</p><h2>Exportvorgang erfassen</h2></div><button type="button" id="close-dialog" class="icon-button">×</button></div><p class="muted">Nutze ausschließlich synthetische Beispieldaten.</p><div class="form-grid">
+    <label>Unternehmen<input name="company" required placeholder="Demo-Unternehmen"></label><label>Produkt<input name="product" required placeholder="Produkt / Artikel"></label><label>Zielregion<input name="destination" required placeholder="Land oder Region"></label><label>Endnutzer<input name="end_user" required placeholder="Unternehmen / Organisation"></label>
+    <label class="wide">Verwendungszweck<textarea name="end_use" rows="2" placeholder="Was soll der Endnutzer mit dem Produkt tun?"></textarea></label><label>Klassifizierung<input name="classification" placeholder="Falls bekannt"></label>
+    <label>Screening<select name="restricted_party_screening"><option value="">Noch offen</option><option value="clear">Demo: unauffällig</option><option value="potential_match">Demo: möglicher Treffer</option><option value="confirmed_match">Demo: bestätigter Treffer</option></select></label>
+    <label>Zielrisiko<select name="destination_risk"><option value="">Noch offen</option><option value="standard">Standard</option><option value="heightened">Erhöht</option><option value="prohibited">Gesperrt (Demo)</option></select></label>
+    <label>Genehmigung nötig?<select name="license_required"><option value="unknown">Noch offen</option><option value="false">Nein (Angabe)</option><option value="true">Ja (Angabe)</option></select></label>
+    <label>Genehmigungsstatus<select name="license_status"><option value="">Noch offen</option><option value="granted">Erteilt (Demo)</option><option value="pending">Ausstehend</option><option value="denied">Abgelehnt (Demo)</option></select></label>
+  </div><div class="form-actions"><button type="button" id="cancel-dialog" class="secondary">Abbrechen</button><button class="primary" type="submit">Fall anlegen & prüfen</button></div></form></dialog>
+  <dialog id="review-dialog"><form id="review-form" method="dialog"><div class="dialog-head"><div><p class="eyebrow">MENSCHLICHE PRÜFUNG</p><h2>Prüfung dokumentieren</h2></div><button type="button" id="close-review" class="icon-button">×</button></div><label>Prüfer/in<input name="reviewer" required value="Demo Reviewer"></label><label>Ergebnis<select name="decision"><option value="more_information_requested">Weitere Informationen angefordert</option><option value="approved_by_reviewer">Durch Reviewer freigegeben</option><option value="rejected_by_reviewer">Durch Reviewer abgelehnt</option></select></label><label>Notiz<textarea name="note" rows="3" placeholder="Begründung oder nächste Schritte"></textarea></label><p class="fineprint">Diese Auswahl wird als menschliche Eingabe gespeichert. Das System trifft keine Freigabeentscheidung.</p><div class="form-actions"><button type="button" id="cancel-review" class="secondary">Abbrechen</button><button class="primary" type="submit">Prüfung protokollieren</button></div></form></dialog>
+  <script src="/app.js" defer></script>
+</body></html>

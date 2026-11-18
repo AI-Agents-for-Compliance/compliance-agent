@@ -1,0 +1,18 @@
+name: Prototype CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  export-compliance-copilot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run prototype unit tests
+        run: python -m unittest discover -s export-compliance-copilot/tests -v
