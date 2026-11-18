@@ -6,6 +6,10 @@ export interface Reifegrad {
   titel: string;
   prozent: number | null;
   anzahl: Record<Status, number>;
+  /** Anforderungen mit bewertbarem Befund (Basis des Prozentwerts). */
+  automatischGeprueft: number;
+  /** Alle Katalog-Anforderungen des Bereichs. */
+  anforderungenGesamt: number;
 }
 
 const PUNKTE: Record<Status, number | null> = {
@@ -27,12 +31,14 @@ export function reifegrad(katalog: Katalog, findings: Finding[]): Reifegrad[] {
     const anzahl: Record<Status, number> = { erfuellt: 0, teilweise: 0, nicht_erfuellt: 0, nicht_pruefbar: 0 };
     let punkte = 0;
     let gewicht = 0;
+    let geprueft = 0;
     for (const f of findings) {
       const a = nachId.get(f.anforderungId);
       if (!a || a.bereich !== nr) continue;
       anzahl[f.status]++;
       const p = PUNKTE[f.status];
       if (p === null) continue;
+      geprueft++;
       punkte += p * a.gewicht;
       gewicht += a.gewicht;
     }
@@ -41,6 +47,8 @@ export function reifegrad(katalog: Katalog, findings: Finding[]): Reifegrad[] {
       titel: katalog.bereiche.find((b) => b.nr === nr)?.titel ?? `Bereich ${nr}`,
       prozent: gewicht === 0 ? null : Math.round((punkte / gewicht) * 100),
       anzahl,
+      automatischGeprueft: geprueft,
+      anforderungenGesamt: katalog.anforderungen.filter((a) => a.bereich === nr).length,
     };
   });
 }

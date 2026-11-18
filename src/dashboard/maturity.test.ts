@@ -37,4 +37,13 @@ describe("reifegrad", () => {
     const r = reifegrad(kat([{ id: "X", bereich: 2 }]), [f("UNBEKANNT", "erfuellt")]);
     expect(r.find((b) => b.bereich === 2)!.prozent).toBeNull();
   });
+  it("zählt automatisch geprüfte und alle Anforderungen je Bereich", () => {
+    const r = reifegrad(kat([{ id: "X", bereich: 6 }, { id: "Y", bereich: 6 }, { id: "Z", bereich: 6 }, { id: "W", bereich: 7 }]),
+      [f("X", "erfuellt"), f("Y", "nicht_pruefbar")]);
+    const b = r.find((x) => x.bereich === 6)!;
+    expect(b.automatischGeprueft).toBe(1);
+    expect(b.anforderungenGesamt).toBe(3);
+    expect(r.find((x) => x.bereich === 7)).toMatchObject({ automatischGeprueft: 0, anforderungenGesamt: 1 });
+    expect(r.find((x) => x.bereich === 1)).toMatchObject({ automatischGeprueft: 0, anforderungenGesamt: 0 });
+  });
 });

@@ -19,6 +19,9 @@ export function BereichKarte({ r }: { r: Reifegrad }) {
           <meter min={0} max={100} value={r.prozent} aria-label={`Reifegrad ${r.titel}`} />
         </>
       )}
+      <p className={s.hinweis}>
+        Basis: {r.automatischGeprueft} von {r.anforderungenGesamt} Anforderungen automatisch geprüft
+      </p>
       <ul className={s.anzahl}>
         {REIHENFOLGE.filter((st) => r.anzahl[st] > 0).map((st) => (
           <li key={st}>

@@ -10,15 +10,16 @@ const leer = { erfuellt: 0, teilweise: 0, nicht_erfuellt: 0, nicht_pruefbar: 0 }
 
 describe("BereichKarte", () => {
   it("zeigt deutschen Hinweis ohne Nachweise", () => {
-    render(<BereichKarte r={{ bereich: 4, titel: "Sicherheit der Lieferkette", prozent: null, anzahl: leer }} />);
+    render(<BereichKarte r={{ bereich: 4, titel: "Sicherheit der Lieferkette", prozent: null, anzahl: leer, automatischGeprueft: 0, anforderungenGesamt: 2 }} />);
     expect(screen.getByText("noch keine automatischen Nachweise")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Sicherheit der Lieferkette/ })).toBeInTheDocument();
   });
   it("zeigt Prozent und Anzahlen als Text", () => {
-    render(<BereichKarte r={{ bereich: 9, titel: "Zugriff", prozent: 67, anzahl: { ...leer, erfuellt: 1, teilweise: 1 } }} />);
+    render(<BereichKarte r={{ bereich: 9, titel: "Zugriff", prozent: 67, anzahl: { ...leer, erfuellt: 1, teilweise: 1 }, automatischGeprueft: 2, anforderungenGesamt: 5 }} />);
     expect(screen.getByText("67 %")).toBeInTheDocument();
     expect(screen.getByText(/1 erfüllt/)).toBeInTheDocument();
     expect(screen.getByText(/1 teilweise/)).toBeInTheDocument();
+    expect(screen.getByText("Basis: 2 von 5 Anforderungen automatisch geprüft")).toBeInTheDocument();
   });
 });
 
